@@ -1,0 +1,68 @@
+Giai đoạn 1: Khám phá & Thấu hiểu Dữ liệu (EDA - Exploratory Data Analysis)
+Trước khi làm AI, chúng ta đã "mổ xẻ" bộ dữ liệu 18 mã cổ phiếu và chỉ số VN-Index (2012 - 2026) để nắm bắt đặc tính của thị trường:
+
+Tính mùa vụ & Chu kỳ: Xác định được "Hiệu ứng tháng Giêng" (thường tăng) và "Sell in May" (thường giảm). Phân rã chu kỳ cho thấy giá cổ phiếu dao động theo hình sin đan xen các cú sốc (Nhiễu/Resid).
+
+Ma trận tương quan: Phát hiện nhóm Ngân hàng (VCB, BID, CTG...) có độ đồng pha cực cao, phù hợp để gom chung vào học cùng một mô hình. Các mã như VNM hay MSR có tính độc lập cao, dùng để phòng thủ.
+
+Bản đồ Rủi ro - Lợi nhuận: Phân loại cổ phiếu thành nhóm "Tăng trưởng bền vững" (FPT, VCB) và nhóm "Biến động mạnh/Đầu cơ" (BSR, OIL, VIC) để AI có chiến lược đánh riêng.
+
+Phân tích Vĩ mô & Phái sinh:
+
+Đo lường Beta để tìm ra các Trụ (Market Pullers) hay kéo/đạp VN-Index (VHM, VIC, VPB).
+
+Khám phá hiệu ứng Độ lệch Basis (Phái sinh - Cơ sở): Khi Basis dương/âm nặng ở phiên trước, VN30 thường bị "trả điểm" ở T+1 và T+2.
+
+Giai đoạn 2: Xây dựng "Não Trái" - Chế biến Đặc trưng (Feature Engineering)
+Biến dữ liệu thô (Giá, Khối lượng) thành các chỉ số (Tỷ lệ) để AI có thể hiểu được, bất kể giá cổ phiếu là 10.000đ hay 100.000đ.
+
+Bộ lọc Dòng Tiền (Tiên quyết):
+
+Đột biến Khối lượng (Vol_Spike): Phát hiện dòng tiền lớn gấp n lần trung bình.
+
+OBV (On-Balance Volume): Tìm kiếm sự phân kỳ (giá đi ngang nhưng tiền vẫn âm thầm bơm vào).
+
+CMF (Chaikin Money Flow): Đo lường áp lực Mua/Bán chủ động trong phiên.
+
+VSA Signals: Nhận diện nến Gom hàng, Xả hàng, Cao trào bán (Selling Climax), Bẫy bứt phá (Bull-trap).
+
+VWAP: Đo lường giá trị tiền thực tế
+
+Bộ lọc Kỹ thuật & Tâm lý:
+
+Xu hướng (MA20, MA50, MACD).
+
+Độ nén/Biến động (Bollinger Bands).
+
+Chỉ số hoảng loạn/hưng phấn (RSI).
+
+UP/Down Trend Trap Bẫy bắt đáy và bẫy đu đỉnh
+
+thêm ta phải vào cuộc chơi khi nhà tổ chức đang gom hàng và kéo hàng, bán khi nhà tổ chức bán. Nhận diện được lúc này, thường sau những pha sập thị trường mạnh
+
+Warm Up Giai đoạn khởi động
+
+Giai đoạn 3: Xác định Bài toán & Cắm Nhãn (Target Labeling)
+Chốt mục tiêu: Lựa chọn bài toán Phân loại (Classification) - Dự đoán Xu hướng Lên/Xuống thay vì Hồi quy (Dự đoán giá chính xác).
+
+Cách làm: AI không cần đoán ngày mai giá là 25.500đ. AI chỉ cần trả lời: "Với dòng tiền và kỹ thuật hiện tại, xác suất cổ phiếu này tăng lớn hơn 2% trong 5 ngày tới (T+5) có vượt qua 60% không?". Nếu có -> MUA.
+
+Giai đoạn 4: Kiến trúc Huấn luyện AI (Walk-Forward Validation)
+Giải quyết triệt để bài toán "Thị trường luôn thay đổi" và "Cổ phiếu mới lên sàn (VHM, BSR) ít dữ liệu":
+
+Tập Train (Học quy luật - 2012 đến 2017): Cho AI học cách cá mập gom hàng ở các cổ phiếu kỳ cựu.
+
+Tập Validation (Thi thử - 2018 đến 2021): Thả AI vào môi trường có các mã mới IPO. Kết quả test cho thấy AI vẫn bắt chính xác hành vi cá mập ở mã mới nhờ học qua "tỷ lệ" thay vì "giá tuyệt đối".
+
+Tập Test (Thực chiến - 2022 đến 2026): Dùng để tinh chỉnh lần cuối trước khi đem hệ thống đi đánh real.
+
+Giai đoạn 5: Khớp nối Trình tự Giao dịch (Pipeline Hoàn chỉnh)
+Toàn bộ hệ thống sẽ chạy tự động theo phễu lọc 4 bước của bạn:
+
+DÒNG TIỀN (Lọc thô): Quét toàn bộ 18 mã. Chỉ giữ lại những mã hôm nay có Vol_Spike > 1.5, CMF > 0 (Tiền đang vào) và OBV ngóc đầu lên.
+
+KỸ THUẬT (Lọc tinh): Từ danh sách lọt qua Bước 1, AI Kỹ thuật sẽ xét xem mã đó đang ở điểm mua nào (Chạm hỗ trợ bật lên, Breakout đỉnh, hay Cao trào bán tạo đáy). Nếu VN-Index đang gãy hoặc Basis phái sinh âm nặng -> Hủy bỏ lệnh.
+
+THÔNG TIN (Não phải - Tương lai): Sắp tới sẽ tích hợp module NLP quét tin tức (Sentiment) để xem có tin vĩ mô nào ủng hộ nhóm ngành đó không.
+
+QUYẾT ĐỊNH: AI xuất ra lệnh MUA kèm Mức Cắt lỗ (Stoploss) và Chốt lời (Take Profit) tự động.
